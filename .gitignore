@@ -1,19 +1,1 @@
-__pycache__/
-.mypy_cache/
-.ipynb_checkpoints/
-*.egg-info/
-/.venv*/
-/.tox/
-/build/
-/download/
-dist/
 
-coverage.xml
-.coverage
-
-g2p.fst
-g2p.corpus
-#lexicon*.txt
-#words.txt
-
-#/data/
