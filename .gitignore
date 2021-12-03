@@ -13,7 +13,7 @@ coverage.xml
 
 g2p.fst
 g2p.corpus
-lexicon*.txt
-words.txt
+#lexicon*.txt
+#words.txt
 
-/data/
+#/data/
