@@ -292,6 +292,9 @@ class MarkNode(Node):
 
     name: str = ""
     """Name of the mark"""
+    
+    text: str = ""
+    """Text inside the mark"""
 
 
 @dataclass
