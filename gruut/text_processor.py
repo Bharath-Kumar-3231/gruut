@@ -285,7 +285,8 @@ class TextProcessor:
                 elif isinstance(node, MarkNode):
                     # User-defined mark
                     mark_node = typing.cast(MarkNode, node)
-                    mark_name = mark_node.name
+                    mark_name = [mark_node.name]
+                    mark_name.append(mark_node.text)
                     mark_parent = self._find_parent(
                         graph, node, (SentenceNode, ParagraphNode, SpeakNode)
                     )
@@ -907,6 +908,7 @@ class TextProcessor:
                         node=len(graph),
                         element=elem,
                         name=attrib_no_namespace(elem, "name", ""),
+                        text=attrib_no_namespace(elem, "text", ""),
                     )
                     graph.add_node(mark_node.node, data=mark_node)
                     graph.add_edge(last_target.node, mark_node.node)
