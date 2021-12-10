@@ -63,6 +63,25 @@ DEFAULT_LEXICON_ID = ""
 
 # -----------------------------------------------------------------------------
 
+def identify_ipa_phonemes(phoneme_sequence):
+    marks_list = ['ˈ','ˌ','ː']
+    output_phonemes = []
+    index = 0
+    while index < len(phoneme_sequence):
+        phone = phoneme_sequence[index]
+        try:
+            if phone in marks_list[0:-1]:
+                output_phonemes.append(phone + phoneme_sequence[index+1])
+                index = index + 1
+            elif phone==marks_list[-1]:
+                output_phonemes[-1] += phone
+            else:
+                output_phonemes.append(phone)
+        except:
+            print('invalid phoneme sequence')
+        index = index + 1
+    return output_phonemes
+
 
 class TextProcessor:
     """Tokenizes, verbalizes, and phonemizes text and SSML"""
@@ -936,9 +955,13 @@ class TextProcessor:
                         # space is present, otherwise assume phonemes =
                         # graphemes.
                         word_phonemes = [
-                            maybe_split_ipa(phoneme_str)
-                            for phoneme_str in word_phonemes_strs
+                                identify_ipa_phonemes(phoneme_str)
+                                for phoneme_str in word_phonemes_strs
                         ]
+                        #word_phonemes = [
+                        #    maybe_split_ipa(phoneme_str)
+                        #    for phoneme_str in word_phonemes_strs
+                        #]
                     else:
                         word_phonemes = None
                 elif elem_tag == "lang":
