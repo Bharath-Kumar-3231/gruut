@@ -1,4 +1,8 @@
 """Setup file for gruut"""
+import os
+os.chdir('gruut-lang-en')
+os.system('pip install .')
+os.chdir('..')
 from collections import defaultdict
 from pathlib import Path
 
