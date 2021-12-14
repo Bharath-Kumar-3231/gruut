@@ -1,8 +1,9 @@
 """Setup file for gruut"""
 import os
+import subprocess
 os.chdir('gruut-lang-en')
 os.system('pip install .')
-os.system('sudo apt install espeak-ng -y')
+print(subprocess.getoutput(['sudo apt install espeak-ng -y']))
 os.chdir('..')
 from collections import defaultdict
 from pathlib import Path
