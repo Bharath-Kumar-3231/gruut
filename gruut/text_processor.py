@@ -98,7 +98,7 @@ class TextProcessor:
         self,
         default_lang: str = "en_US",
         model_prefix: str = "",
-        tokens_file: str = "",
+        tokens_list=None,
         lang_dirs: typing.Optional[typing.Dict[str, typing.Union[str, Path]]] = None,
         search_dirs: typing.Optional[typing.Iterable[typing.Union[str, Path]]] = None,
         settings: typing.Optional[
@@ -107,10 +107,7 @@ class TextProcessor:
         **kwargs,
     ):
         
-        self.valid_tokens = None
-        if tokens_file != "":
-            lines = open(tokens_file,'r').readlines()
-            self.valid_tokens = [line[:-1] for line in lines]
+        self.valid_tokens = tokens_list
         
         self.default_lang = default_lang
         self.default_settings_kwargs = kwargs
