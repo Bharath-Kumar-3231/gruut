@@ -63,23 +63,31 @@ DEFAULT_LEXICON_ID = ""
 
 # -----------------------------------------------------------------------------
 
-def identify_ipa_phonemes(phoneme_sequence):
+def identify_ipa_phonemes(phoneme_sequence,valid_tokens):
     marks_list = ['ˈ','ˌ','ː']
     output_phonemes = []
     index = 0
     while index < len(phoneme_sequence):
         phone = phoneme_sequence[index]
-        try:
-            if phone in marks_list[0:-1]:
-                output_phonemes.append(phone + phoneme_sequence[index+1])
-                index = index + 1
-            elif phone==marks_list[-1]:
-                output_phonemes[-1] += phone
-            else:
-                output_phonemes.append(phone)
-        except:
-            print('invalid phoneme sequence')
+        if phone in marks_list[0:-1]:
+            output_phonemes.append(phone + phoneme_sequence[index+1])
+            index = index + 1
+        elif phone==marks_list[-1]:
+            output_phonemes[-1] += phone
+        else:
+            output_phonemes.append(phone)
         index = index + 1
+    invalid_phonemes = []
+    if valid_tokens is not None:
+        for phone in output_phonemes:
+            if phone not in valid_tokens:
+                invalid_phonemes.append(phone)
+    if invalid_phonemes != []:
+        text = ''
+        for phone in invalid_phonemes:
+            text += phone
+            text += ' '
+        raise ValueError(text + ' Are the list of invalid phonemes that USER have entered under phoneme tag')
     return output_phonemes
 
 
@@ -90,6 +98,7 @@ class TextProcessor:
         self,
         default_lang: str = "en_US",
         model_prefix: str = "",
+        tokens_file: str = "",
         lang_dirs: typing.Optional[typing.Dict[str, typing.Union[str, Path]]] = None,
         search_dirs: typing.Optional[typing.Iterable[typing.Union[str, Path]]] = None,
         settings: typing.Optional[
@@ -97,6 +106,12 @@ class TextProcessor:
         ] = None,
         **kwargs,
     ):
+        
+        self.valid_tokens = None
+        if tokens_file != "":
+            lines = open(tokens_file,'r').readlines()
+            self.valid_tokens = [line[:-1] for line in lines]
+        
         self.default_lang = default_lang
         self.default_settings_kwargs = kwargs
 
@@ -955,7 +970,7 @@ class TextProcessor:
                         # space is present, otherwise assume phonemes =
                         # graphemes.
                         word_phonemes = [
-                                identify_ipa_phonemes(phoneme_str)
+                                identify_ipa_phonemes(phoneme_str,self.valid_tokens)
                                 for phoneme_str in word_phonemes_strs
                         ]
                         #word_phonemes = [
