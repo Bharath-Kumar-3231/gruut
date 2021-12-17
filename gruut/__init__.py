@@ -35,6 +35,7 @@ _PROCESSORS_LOCK = threading.RLock()
 
 def sentences(
     text: str,
+    tokens_file: str = "",
     lang: str = "en_US",
     ssml: bool = False,
     espeak: bool = False,
@@ -72,7 +73,7 @@ def sentences(
 
         text_processor = _LOCAL.processors.get(model_prefix)
         if text_processor is None:
-            text_processor = TextProcessor(default_lang=lang, model_prefix=model_prefix)
+            text_processor = TextProcessor(default_lang=lang, tokens_file = tokens_file, model_prefix=model_prefix)
             _LOCAL.processors[model_prefix] = text_processor
 
     assert text_processor is not None
