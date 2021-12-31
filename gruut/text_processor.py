@@ -1170,6 +1170,9 @@ class TextProcessor:
                         word.phonemes = phonemize_settings.lookup_phonemes(
                             word.text, word.role
                         )
+                       
+                    if (word.lang == 'en') and (word.text == 'A') and (word.role not in ['gruut:DT']):
+                        word.phonemes = ['e','ɪ']
 
                     if (not word.phonemes) and (
                         phonemize_settings.guess_phonemes is not None
