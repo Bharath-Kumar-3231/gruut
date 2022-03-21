@@ -15,6 +15,8 @@ from gruut.pos import PartOfSpeechTagger
 from gruut.text_processor import InterpretAsFormat, TextProcessorSettings
 from gruut.utils import find_lang_dir, remove_non_word_chars, resolve_lang
 
+from gruut.g2p_transformer  import Encoder, Decoder, Seq2Seq
+
 _LOGGER = logging.getLogger("gruut")
 
 # -----------------------------------------------------------------------------
@@ -93,20 +95,34 @@ def get_settings(
                 )
 
         # Grapheme to phoneme model
-        if load_g2p_guesser and ("guess_phonemes" not in settings_args):
-            g2p_model_path = lang_dir / lang_model_prefix / "g2p" / "model.crf"
-            if g2p_model_path.is_file():
-                settings_args["guess_phonemes"] = DelayedGraphemesToPhonemes(
-                    g2p_model_path, transform_func=str.lower
-                )
+        if model_prefix != 'transformer':
+            if load_g2p_guesser and ("guess_phonemes" not in settings_args):
+                g2p_model_path = lang_dir / lang_model_prefix / "g2p" / "model.crf"
+                if g2p_model_path.is_file():
+                    settings_args["guess_phonemes"] = DelayedGraphemesToPhonemes(
+                        g2p_model_path, transform_func=str.lower
+                    )
 
-            else:
-                _LOGGER.debug(
-                    "(%s) no grapheme to phoneme CRF model found at %s",
-                    lang,
-                    g2p_model_path,
-                )
+                else:
+                    _LOGGER.debug(
+                        "(%s) no grapheme to phoneme CRF model found at %s",
+                        lang,
+                        g2p_model_path,
+                    )
+         else:
+            if load_g2p_guesser and ("guess_phonemes" not in settings_args):
 
+                #character_file = lang_dir / lang_model_prefix / 'characters-no-pos.csv'
+                character_file = lang_dir / lang_model_prefix / 'final-character.csv'
+                #ipa_file = lang_dir / lang_model_prefix / 'phonemes-no-pos.csv'
+                ipa_file = lang_dir / lang_model_prefix / 'final-phoneme.csv'
+                model_path = lang_dir / lang_model_prefix / 'tut6-model-no-pos.pt'
+
+                settings_args["guess_phonemes"] = TransformerGrapheme2Phonemes(
+                        character_file,
+                        ipa_file,
+                        model_path
+                        )
     # ---------------------------------
     # Create language-specific settings
     # ---------------------------------
@@ -854,3 +870,67 @@ class DelayedSqlitePhonemizer:
 
         assert self.phonemizer is not None
         return self.phonemizer(word, role=role, do_transforms=do_transforms)
+    
+class TransformerGrapheme2Phonemes:
+
+    def __init__(
+        self,
+        character_file,
+        ipa_file,
+        model_path
+    ):
+        self.labels2characters = {i[2]:i[1] for i in pd.read_csv(character_file).values.tolist()}
+        self.labels2ipa = {i[2]:i[1] for i in pd.read_csv(ipa_file).values.tolist()}
+
+        self.character2labels = {i[1]:i[2] for i in pd.read_csv(character_file).values.tolist()}
+        self.ipa2labels = {i[1]:i[2] for i in pd.read_csv(ipa_file).values.tolist()}
+
+        INPUT_DIM = len(self.labels2characters.keys())
+        OUTPUT_DIM = len(self.labels2ipa.keys())
+        HID_DIM = 128
+        ENC_LAYERS = 1
+        DEC_LAYERS = 1
+        ENC_HEADS = 4
+        DEC_HEADS = 4
+        ENC_PF_DIM = 256
+        DEC_PF_DIM = 256
+        ENC_DROPOUT = 0.1
+        DEC_DROPOUT = 0.1
+
+        device = 'cpu'
+
+        enc = Encoder(INPUT_DIM,
+                      HID_DIM,
+                      ENC_LAYERS,
+                      ENC_HEADS,
+                      ENC_PF_DIM,
+                      ENC_DROPOUT,
+                      device)
+
+        dec = Decoder(OUTPUT_DIM,
+                      HID_DIM,
+                      DEC_LAYERS,
+                      DEC_HEADS,
+                      DEC_PF_DIM,
+                      DEC_DROPOUT,
+                      device)
+
+        SRC_PAD_IDX=0
+        TRG_PAD_IDX=0
+        self.model = Seq2Seq(enc, dec, SRC_PAD_IDX, TRG_PAD_IDX, device).to(device)
+
+        state_dict = torch.load(model_path, map_location = 'cpu')
+        self.model.load_state_dict(state_dict)
+        self.model.eval()
+
+    def __call__(self, word, role=None, do_transforms=None):
+        with torch.no_grad():
+            src = ['sos'] + [i for i in str(word).lower()] + ['eos']
+            src = torch.tensor([self.character2labels[i] for i in src]).long().unsqueeze(0)
+            trg = torch.Tensor([[2]]).type(torch.LongTensor)
+
+            output = self.model.inference(src, trg[:,:])
+            output = output[:-1]
+            output_phonemes = [self.labels2ipa[j.item()] for j in output]
+
+            return(output_phonemes)
