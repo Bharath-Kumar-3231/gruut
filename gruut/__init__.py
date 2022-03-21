@@ -46,7 +46,7 @@ def sentences(
     phonemes: bool = True,
     break_phonemes: bool = True,
     pos: bool = True,
-    transformer: bool = True,
+    #transformer: bool = True,
     **process_args,
 ) -> typing.Iterable[Sentence]:
     """
@@ -67,7 +67,7 @@ def sentences(
 
     """
     model_prefix = "" if (not espeak) else "espeak"
-    model_prefix = "" if (not transformer) else "transformer"
+    #model_prefix = "" if (not transformer) else "transformer"
 
     with _PROCESSORS_LOCK:
         if not hasattr(_LOCAL, "processors"):
